@@ -1,23 +1,20 @@
 # Theatron Relay
 
-Theatron Relay is an optional Rust service for giving Launcher-managed Minecraft servers a public multiplayer address when the server host cannot accept inbound connections. A player connects to the relay; the Launcher agent connects outward over TLS and forwards that player's traffic to the local server. The relay verifies a short-lived token signed by the selected Theatron engine. It does not call Apeyron Central to route a connection.
+Theatron Relay is an optional Rust service that gives Launcher-managed Minecraft servers a public multiplayer address when the server host cannot accept inbound connections. Players connect to the relay; the Launcher agent connects outward over TLS and forwards their traffic to the local server. The relay verifies short-lived tokens signed by the selected Theatron engine.
 
-> **Status — preparing the source release.** This repository currently contains scope documentation only. The Rust implementation, container image, deployment guide, license and release artifacts are not published here yet. There is no installable release from this repository today.
+> **Availability:** This repository currently contains a README only. Source code, a container image, and deployment instructions are not available here yet.
 
-## Why a separate repository
+## Connections
 
-The relay is a standalone network service with its own Rust build, container, tests, operational controls and release cadence. It is not required for a directly reachable Paper server or for the first self-hosted Theatron installation. Apeyron Cloud will operate its own relay deployment; a self-hoster may later run a compatible relay using their own domain, DNS, TLS certificates, ports and signing-key trust.
+The [Theatron engine](https://github.com/theatronmc/theatron) signs address tokens. The [Launcher](https://github.com/theatronmc/launcher) agent opens the outbound connection and forwards traffic to its local Paper server. The relay checks the token with the engine's public key; it does not call the engine for each connection. A server that already accepts direct player connections does not need the relay.
 
-The resource-pack build worker is different: it runs in a separate container but currently imports the core engine's repositories, entities and publication services, while its compiler build consumes the core's plugin targets and shared fixtures. Its source and image release belong with the [core repository](https://github.com/theatronmc/theatron) until a stable independent contract exists.
+## Network interfaces
 
-## Intended source release
+- **Java players:** public TCP listener; the Minecraft handshake hostname selects the destination server.
+- **Bedrock players:** public UDP port allocated to a connected server.
+- **Launcher agents:** TLS listener with token-authenticated address claims and a versioned control protocol.
+- **Operators:** private health and metrics listener.
 
-- Rust service, lockfile, tests and independently buildable container image.
-- Operator guide for public Java TCP and Bedrock UDP listeners, private health and metrics endpoints, DNS/TLS, limits, abuse response, upgrades and shutdown.
-- Versioned agent ↔ relay protocol and token contract, with shared test vectors and a compatibility matrix for the [Launcher](https://github.com/theatronmc/launcher) and engine.
-- Reproducible conformance and integration checks across the repository boundary.
-- Required upstream attribution, notices and license files. The current private implementation derives from `vgskye/e4mc-quiclime`; those obligations will be reviewed and carried into the source release.
+An operator running a relay needs a public domain, DNS and TLS configuration, exposed player ports, and the public key of the engine issuing its tokens. The engine, Launcher agent, and relay must use compatible protocol versions. The relay is optional for Theatron self-hosting.
 
-The present implementation lives privately under `apps/relay` in Theatron's development monorepo. Its protocol mirrors types in the core's shared package and currently reads a core-owned fixture. Before extracting source, we will move or version that fixture, prove standalone builds, test interoperability with pinned core and Launcher releases, and review source and dependencies for publication.
-
-See the [core repository](https://github.com/theatronmc/theatron) and [documentation](https://github.com/theatronmc/docs) for the broader open-source release status.
+See the [Theatron documentation](https://github.com/theatronmc/docs) for the wider product.
